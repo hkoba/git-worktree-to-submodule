@@ -64,12 +64,15 @@ function gen-workdir-to-submodule {
             echo 1>&2 "Can't find .git/HEAD for $submod, skipped"
             return 1
         fi
-        remote=$(get_default_remote)
-        url=$(git config remote.$remote.url)
         relative-gitdir-and-smpath $destDn $PWD
         E git config -f $outerGit/.gitmodules submodule.$modName.path $modName
-        E git config -f $outerGit/.gitmodules submodule.$modName.url $url
-        E git config -f $outerGit/.git/config submodule.$modName.url $url
+
+        remote=$(get_default_remote)
+        url=$(git config remote.$remote.url)
+        if [[ -n $url ]]; then
+            E git config -f $outerGit/.gitmodules submodule.$modName.url $url
+            E git config -f $outerGit/.git/config submodule.$modName.url $url
+        fi
         E mv $verbose $PWD/.git $destDn
         ECHO-TO $PWD/.git gitdir: $gitdir
         E git config -f $destDn/config core.worktree $worktree
