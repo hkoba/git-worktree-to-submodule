@@ -60,6 +60,16 @@ EOF
     exit 1
 }
 
+o_verbose=()
+zparseopts -D -K v=o_verbose
+
+gitopts=(-q)
+if (($#o_verbose)); then
+    gitopts=()
+fi
+
+#----------------------------------------
+
 if ((! ARGC)); then
     usage
 fi
@@ -75,39 +85,39 @@ mkdir $dirList;
 
 for d in A B B/X B/X/Y; do
     rd=$tmpDir/repo/$d:t.git
-    git init --bare $rd
+    git init $gitopts --bare $rd
     dn=$tmpDir/work/$d
     # mkdir -p $dn
-    git clone $rd $dn || break
+    git clone $gitopts $rd $dn 2>/dev/null
     t=$dn:t:l
     echo $t > $dn/$t
     echo $t$t > $dn/$t$t
-    (cd $dn && git add *(.) && git commit -m init && git push)
+    (cd $dn && git add *(.) && git commit $gitopts -m init && git push $gitopts)
 done;
 
 root=$tmpDir/expected
 rootRepo=$tmpDir/repo/expected.git
 
-git init --bare $rootRepo
-git clone $rootRepo $root
+git init $gitopts --bare $rootRepo
+git clone $gitopts $rootRepo $root 2>/dev/null
 
 (
     cd $root
-    git submodule add ../A.git
-    git submodule add ../B.git
-    git commit -m submodule
+    git submodule $gitopts add ../A.git
+    git submodule $gitopts add ../B.git
+    git commit $gitopts -m submodule
 )
 
 (
     cd $tmpDir/expected/B
-    git submodule add ../X.git
-    git commit -m submodule
+    git submodule $gitopts add ../X.git
+    git commit $gitopts -m submodule
 )
 
 (
     cd $tmpDir/expected/B/X
-    git submodule add ../Y.git
-    git commit -m submodule
+    git submodule $gitopts add ../Y.git
+    git commit $gitopts -m submodule
 )
 
 for d in expected/B/X/Y expected/B/X expected/B expected; do
@@ -115,9 +125,9 @@ for d in expected/B/X/Y expected/B/X expected/B expected; do
     cd $tmpDir/$d
     if ! git diff --exit-code >/dev/null; then
         git add -u
-        git commit -m "expected $d:t"
+        git commit $gitopts -m "expected $d:t"
     fi
-    git push
+    git push $gitopts
 )
 done
 
@@ -125,6 +135,9 @@ done
 # Then clone and verify.
 # ========================================
 
-git clone --recurse-submodules $tmpDir/repo/expected.git $tmpDir/got
+git clone $gitopts $tmpDir/repo/expected.git $tmpDir/got
+(cd $tmpDir/got && git submodule $gitopts update --init --recursive)
 
 diff -N -u -r --exclude=.git $tmpDir/got $tmpDir/expected
+
+print -l '' BUILT: $tmpDir/{repo,work,got,expected}
