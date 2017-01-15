@@ -52,8 +52,8 @@ function gen-workdir-to-submodule {
         cd $submod
         modName=$PWD:t
         destDn=$outerGit/.git/modules/$modName
-        if [[ ! -e .git/HEAD ]] || ! bra=$(git-current); then
-            echo 1>&2 "Can't find current branch for $submod, skipped"
+        if [[ ! -e .git/HEAD ]]; then
+            echo 1>&2 "Can't find .git/HEAD for $submod, skipped"
             return 1
         fi
         remote=$(get_default_remote)
@@ -69,8 +69,6 @@ function gen-workdir-to-submodule {
     )
 }
 
-function abspath { cd $1:h && print $PWD/$1:t }
-
 function gen-rewrite-nested-submodule {
     local outerWork=$1 submod=$2
     (
@@ -85,11 +83,13 @@ function gen-rewrite-nested-submodule {
             # Remove leading part before .git/
             modsuf=${gitdir/*\/[^\/]#\/.git\//}
             # echo modsuf1=$modsuf
+
+            # Replace intermediate '../.git/modules/' to 'modules/'
             modsuf=${modsuf//(\/|(#s))..\/.git\/modules\//modules\/}
             #echo modsuf2=$modsuf
             ; # for indentation
                 
-            # Fake gitdir since this script is operating on reloacated copy!
+            # Fake gitdir since this script can be operating on reloacated copy!
             newdir=.git/modules/$modName/$modsuf
 
             ECHO-TO $PWD/$gitfn gitdir: $rel/$newdir
@@ -97,11 +97,6 @@ function gen-rewrite-nested-submodule {
               core.worktree $PWD/$gitfn:h
         done
     )
-}
-
-function git-current {
-  local ref; ref=$(git symbolic-ref HEAD)
-  [[ $ref = refs/heads/* ]] && print ${ref#refs/heads/}
 }
 
 #----------------------------------------
