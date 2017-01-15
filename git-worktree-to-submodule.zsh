@@ -69,6 +69,8 @@ function gen-workdir-to-submodule {
     )
 }
 
+function abspath { cd $1:h && print $PWD/$1:t }
+
 function gen-rewrite-nested-submodule {
     local outerWork=$1 submod=$2
     (
@@ -76,11 +78,23 @@ function gen-rewrite-nested-submodule {
         modName=$PWD:t
         destDn=$outerGit/.git/modules/$modName
         
-        find . -mindepth 2 -name .git | while read gitfn; do
+        for gitfn in $(find . -depth -mindepth 2 -name .git -type f); do
+            gitfn=${gitfn#./}
+            rel=${gitfn//[!\/]##/..}
             gitdir=$(sed -n 's/^gitdir: //p' $gitfn)
-            newdir=${gitdir//$modName\/.git\/modules/.git\/modules\/$modName\/modules}
-            ECHO-TO $PWD/$gitfn gitdir: $newdir
-            E git config -f $newdir/config core.worktree $PWD/$gitfn:h
+            # Remove leading part before .git/
+            modsuf=${gitdir/*\/[^\/]#\/.git\//}
+            # echo modsuf1=$modsuf
+            modsuf=${modsuf//(\/|(#s))..\/.git\/modules\//modules\/}
+            #echo modsuf2=$modsuf
+            ; # for indentation
+                
+            # Fake gitdir since this script is operating on reloacated copy!
+            newdir=.git/modules/$modName/$modsuf
+
+            ECHO-TO $PWD/$gitfn gitdir: $rel/$newdir
+            E git config -f $outerGit/$newdir/config \
+              core.worktree $PWD/$gitfn:h
         done
     )
 }
@@ -171,5 +185,6 @@ function main {
 if (($#o_dryrun)); then
     main $outerGit "$@"
 else
-    main $outerGit "$@" | sh
+    # Create all script and then run it.
+    sh =(main $outerGit "$@")
 fi
