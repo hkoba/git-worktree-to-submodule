@@ -29,8 +29,9 @@ EOF
 #----------------------------------------
 
 o_dryrun=() o_xtrace=() o_sourceonly=()
+o_quiet=()
 o_dir=() 
-zparseopts -D -K n=o_dryrun x=o_xtrace S=o_sourceonly d:=o_dir
+zparseopts -D -K n=o_dryrun x=o_xtrace S=o_sourceonly q=o_quiet d:=o_dir
 
 #----------------------------------------
 
@@ -40,6 +41,11 @@ if (($#o_dir)); then
     outerGit=$(cd $outerGit && print $PWD)
 else
     outerGit=$PWD
+fi
+
+verbose=()
+if ((! $#o_quiet)); then
+    verbose=(-v)
 fi
 
 #----------------------------------------
@@ -62,7 +68,7 @@ function gen-workdir-to-submodule {
         E git config -f $outerGit/.gitmodules submodule.$modName.path $modName
         E git config -f $outerGit/.gitmodules submodule.$modName.url $url
         E git config -f $outerGit/.git/config submodule.$modName.url $url
-        E mv -v $PWD/.git $destDn
+        E mv $verbose $PWD/.git $destDn
         ECHO-TO $PWD/.git gitdir: $gitdir
         E git config -f $destDn/config core.worktree $worktree
         E git add $PWD
@@ -80,7 +86,7 @@ function gen-rewrite-nested-submodule {
             gitfn=${gitfn#./}
             rel=${gitfn//[!\/]##/..}
             gitdir=$(sed -n 's/^gitdir: //p' $gitfn)
-            # Remove leading part before .git/
+            # Remove leading part of .git/
             modsuf=${gitdir/*\/[^\/]#\/.git\//}
             # echo modsuf1=$modsuf
 
@@ -164,7 +170,7 @@ function main {
     E set -e
     E cd $outerGit
     if [[ ! -e .git ]]; then
-        E git init
+        E git init $o_quiet
     fi
     if [[ ! -d .git/modules ]]; then
         E mkdir .git/modules
