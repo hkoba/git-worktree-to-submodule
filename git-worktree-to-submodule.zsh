@@ -54,7 +54,7 @@ function gen-workdir-to-submodule {
         destDn=$outerGit/.git/modules/$modName
         if [[ ! -e .git/HEAD ]] || ! bra=$(git-current); then
             echo 1>&2 "Can't find current branch for $submod, skipped"
-            return
+            return 1
         fi
         remote=$(get_default_remote)
         url=$(git config remote.$remote.url)
@@ -66,6 +66,22 @@ function gen-workdir-to-submodule {
         ECHO-TO $PWD/.git gitdir: $gitdir
         E git config -f $destDn/config core.worktree $worktree
         E git add $PWD
+    )
+}
+
+function gen-rewrite-nested-submodule {
+    local outerWork=$1 submod=$2
+    (
+        cd $submod
+        modName=$PWD:t
+        destDn=$outerGit/.git/modules/$modName
+        
+        find . -mindepth 2 -name .git | while read gitfn; do
+            gitdir=$(sed -n 's/^gitdir: //p' $gitfn)
+            newdir=${gitdir//$modName\/.git\/modules/.git\/modules\/$modName\/modules}
+            ECHO-TO $PWD/$gitfn gitdir: $newdir
+            E git config -f $newdir/config core.worktree $PWD/$gitfn:h
+        done
     )
 }
 
@@ -112,6 +128,7 @@ function relative-gitdir-and-smpath {
 # use like: "source git-worktree-to-submodule.zsh -S"
 
 if (($#o_sourceonly)); then
+    set +e
     return
 fi
 
@@ -144,7 +161,9 @@ function main {
         E mkdir .git/modules
     fi
     for dn in "$@"; do
-        gen-workdir-to-submodule . $dn
+        if gen-workdir-to-submodule . $dn; then
+            gen-rewrite-nested-submodule . $dn
+        fi
     done
     E git add .gitmodules
 }
