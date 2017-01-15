@@ -29,9 +29,11 @@ EOF
 #----------------------------------------
 
 o_dryrun=() o_xtrace=() o_sourceonly=()
-o_quiet=()
+o_quiet=() o_NO_BACKUP=()
 o_dir=() 
-zparseopts -D -K n=o_dryrun x=o_xtrace S=o_sourceonly q=o_quiet d:=o_dir
+zparseopts -D -K n=o_dryrun x=o_xtrace S=o_sourceonly q=o_quiet \
+           B=o_NO_BACKUP \
+           d:=o_dir
 
 #----------------------------------------
 
@@ -183,9 +185,18 @@ function main {
     E git add .gitmodules
 }
 
+# $outerGit is abspath here.
+
 if (($#o_dryrun)); then
     main $outerGit "$@"
 else
+    backupFn=$outerGit.tgz
+    if ((! $#o_NO_BACKUP)) && [[ ! -e $backupFn ]]; then
+        if ((! $#o_quiet)); then
+            echo Making backup $backupFn first...
+        fi
+        (cd $outerGit:h && tar zcf $backupFn $outerGit:t)
+    fi
     # Create all script and then run it.
     sh =(main $outerGit "$@")
 fi
