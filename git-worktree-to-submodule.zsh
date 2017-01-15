@@ -201,5 +201,13 @@ else
         (cd $outerGit:h && tar zcf $backupFn $outerGit:t)
     fi
     # Create all script and then run it.
-    sh =(main $outerGit "$@")
+    converter=$outerGit.convert.sh
+    main $outerGit "$@" > $converter
+    if sh $o_xtrace $converter && git -C $outerGit status -su; then
+        (($#o_quiet)) || echo SUCCESS!
+        rm -f $converter
+    else
+        echo FAILED!
+        echo See $converter
+    fi
 fi
