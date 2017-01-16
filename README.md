@@ -1,7 +1,14 @@
 # git-worktree-to-submodule
 
 This script converts existing git workdirs into submodules 
-(and creates surrounding new repository).
+(and creates surrounding new repository to store them).
+Since this is done by moving each `X/.git/` in workdirs into `.git/modules/X/`, this conversion is invisible to outside of git. This scripts updates `.git/modules/X/config` and `X/.git` to point each other again.
+Nested submodules such as `X/Y/.git` are also relocated.
+This script automatically creates backup `.tgz` first (if missing).
+
+If you worry about what this script does, you can use **dry-run** mode with option `-n`. With this mode, this script emits a shellscript to stdout.
+So, you can examine what this script will do line-by-line and even rewrite them.
+
 
 ## SYNOPSIS
 
@@ -13,14 +20,12 @@ converted to submodules.
 AA
 ├── .git/
 │   ├── HEAD
-│   ├── branches/
 │   ├── :
 │   └── refs/
 └── aa
 BB
 ├── .git/
 │   ├── HEAD
-│   ├── branches/
 │   ├── :
 │   └── refs/
 └── bb
@@ -35,6 +40,7 @@ A  .gitmodules
 A  AA
 A  BB
 SUCCESS!
+
 % tree -F -L 1 -a
 .
 ├── .git/
