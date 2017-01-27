@@ -2,7 +2,7 @@
 
 This script converts existing git workdirs into submodules 
 (and creates surrounding new repository to store them).
-Since this is done by moving each `X/.git/` in workdirs into `.git/modules/X/`, this conversion is invisible to outside of git. This scripts updates `.git/modules/X/config` and `X/.git` to point each other again.
+Since this is done by moving each `X/.git/` in workdirs into `.git/modules/X/`, this conversion is invisible to the outside of git. This script updates `.git/modules/X/config` and `X/.git` to point each other again.
 Nested submodules such as `X/Y/.git` are also relocated.
 This script automatically creates backup `.tgz` first (if missing).
 
